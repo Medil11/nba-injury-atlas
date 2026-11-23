@@ -1,0 +1,8 @@
+# données (voir README) : salaires, logs de matchs, dataset Kaggle, photos
+data/
+# généré
+body_map.svg
+__pycache__/
+__marimo__/
+*.pyc
+.venv/

@@ -1,0 +1,9 @@
+marimo>=0.25
+altair>=6
+pandas>=3
+numpy
+pillow
+imageio
+requests
+nba_api
+kagglehub
