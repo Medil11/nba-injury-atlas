@@ -57,6 +57,7 @@ def fdate(t, day=True):
 def new_page(title, sub):
     img = Image.new("RGB", (W * S, H * S), BG)
     d = ImageDraw.Draw(img)
+    d.text((360 * S, 20 * S), "github.com/Medil11", font=font(BOLD, 12), fill=GREY, anchor="mm")  # credit, on every slide
     d.text((360 * S, 62 * S), title, font=font(SLAB, 33), fill=INK, anchor="ms")
     d.text((360 * S, 94 * S), sub, font=font(BOLD, 17), fill=GREY, anchor="ms")
     return img, d
