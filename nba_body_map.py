@@ -16,9 +16,9 @@ def _():
 
 @app.cell
 def _(labels, mo):
-    seasons = mo.ui.multiselect(labels, value=labels, label="Saisons")
-    metric = mo.ui.dropdown({"Jours d'absence cumulés": "days", "Nombre de blessures": "injuries"},
-                            value="Jours d'absence cumulés", label="Couleur")
+    seasons = mo.ui.multiselect(labels, value=labels, label="Seasons")
+    metric = mo.ui.dropdown({"Cumulative days missed": "days", "Number of injuries": "injuries"},
+                            value="Cumulative days missed", label="Color")
     mo.hstack([seasons, metric], justify="start")
     return metric, seasons
 
@@ -27,15 +27,15 @@ def _(labels, mo):
 def _(bodymap, inj, metric, mo, seasons):
     years = [int(s[:4]) for s in seasons.value]
     sel = inj[inj.season.isin(years)]
-    mo.stop(sel.empty, mo.md("Sélectionne au moins une saison."))
+    mo.stop(sel.empty, mo.md("Select at least one season."))
     tab = bodymap.by_region(sel)
     mo.vstack([
         mo.Html(bodymap.poster(sel, metric.value)),
-        mo.md("### Détail par partie du corps"),
-        mo.ui.table(tab.rename(columns={"label": "partie", "injuries": "blessures", "days": "jours cumulés", "avg_days": "jours moyens"})
-                      [["partie", "blessures", "jours cumulés", "jours moyens"]], selection=None),
-        mo.md("Gauche et droite sont regroupées. Les mises sur la liste des blessés sans détail (« placed on IL » seul), les maladies et les protocoles COVID ne sont pas localisés. "
-              "Une absence = de la mise sur la liste des blessés au retour du joueur (premier match joué) ou à sa transaction suivante (mi-avril sinon)."),
+        mo.md("### Detail by body part"),
+        mo.ui.table(tab.rename(columns={"label": "body part", "injuries": "injuries", "days": "total days", "avg_days": "avg days"})
+                      [["body part", "injuries", "total days", "avg days"]], selection=None),
+        mo.md("Left and right are pooled. Injured-list placements with no detail (just “placed on IL”), illnesses and COVID protocols are not located. "
+              "An absence runs from the placement on the injured list to the player's return (first game played) or his next transaction (mid-April otherwise)."),
     ])
     return
 

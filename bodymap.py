@@ -35,11 +35,11 @@ RULES = [
     ("hand", r"wrist|\bhand\b|finger|thumb|knuckle|\bpalm\b"),
 ]
 LABEL = {
-    "head": "Tête / visage", "neck": "Cou", "shoulder": "Épaule", "chest": "Poitrine / côtes",
-    "abdomen": "Abdomen / obliques", "upper_back": "Haut du dos", "lower_back": "Bas du dos",
-    "hip": "Hanche / aine", "arm": "Bras / coude", "hand": "Main / poignet", "quad": "Cuisse",
-    "hamstring": "Ischio-jambiers", "knee": "Genou", "shin": "Tibia / jambe", "calf": "Mollet",
-    "achilles": "Tendon d'Achille", "ankle": "Cheville", "foot": "Pied / orteils",
+    "head": "Head / face", "neck": "Neck", "shoulder": "Shoulder", "chest": "Chest / ribs",
+    "abdomen": "Abdomen / obliques", "upper_back": "Upper back", "lower_back": "Lower back",
+    "hip": "Hip / groin", "arm": "Arm / elbow", "hand": "Hand / wrist", "quad": "Thigh",
+    "hamstring": "Hamstring", "knee": "Knee", "shin": "Shin / lower leg", "calf": "Calf",
+    "achilles": "Achilles tendon", "ankle": "Ankle", "foot": "Foot / toes",
 }
 SEASONS = range(2018, 2023)  # Kaggle injury data ends 2023-04
 
@@ -158,11 +158,11 @@ def _shape(s, fill, title):
     return f'{g} fill="{fill}" stroke="#3b3b38" stroke-width="1.3"><title>{title}</title>' + ("</ellipse>" if s[0] == "e" else "</rect>")
 
 
-def svg(tab, metric="days", title="Où se blessent les joueurs NBA ?", subtitle="", footer=""):
+def svg(tab, metric="days", title="Where do NBA players get hurt?", subtitle="", footer=""):
     """Poster-style SVG (720 x 900): front and back figures coloured by `metric` ('days' or 'injuries')."""
     vals = dict(zip(tab.region, tab[metric]))
     vmax = max(vals.values(), default=0)
-    unit = "jours d'absence" if metric == "days" else "blessures"
+    unit = "days missed" if metric == "days" else "injuries"
     figs, labelled = [], set()
     top = set(sorted(vals, key=vals.get, reverse=True)[:6])
     for ox, shapes, view in ((30, FRONT, "front"), (370, BACK, "back")):
@@ -170,16 +170,16 @@ def svg(tab, metric="days", title="Où se blessent les joueurs NBA ?", subtitle=
         for reg, items in shapes.items():
             v = vals.get(reg, 0)
             row = tab[tab.region == reg]
-            tip = f"{LABEL[reg]} : {v:,.0f} {unit}".replace(",", " ")
+            tip = f"{LABEL[reg]}: {v:,.0f} {unit}"
             if len(row):
-                tip += f" · {int(row.injuries.iloc[0])} blessures, {row.avg_days.iloc[0]} j en moyenne".replace(",", " ")
+                tip += f" · {int(row.injuries.iloc[0])} injuries, {row.avg_days.iloc[0]} days on average"
             parts += [_shape(s, _color(v, vmax) if v else EMPTY, tip) for s in items]
         for reg in shapes:
             if reg in top and reg not in labelled:
                 x, y = LABEL_AT[reg]
                 labelled.add(reg)
                 parts.append(f'<text x="{x}" y="{y + 3}" text-anchor="middle" font-size="9" font-weight="700" fill="#1b1b1a" '
-                             f'stroke="#fff" stroke-width="2.6" paint-order="stroke">{vals[reg]:,.0f}</text>'.replace(",", " "))
+                             f'stroke="#fff" stroke-width="2.6" paint-order="stroke">{vals[reg]:,.0f}</text>')
         figs.append(f'<g transform="translate({ox},130) scale(1.6)">{"".join(parts)}</g>')
     ramp = "".join(f'<rect x="{250 + i * 22}" y="826" width="22" height="12" fill="{_color(i, 9)}"/>' for i in range(10))
     return (
@@ -188,10 +188,10 @@ def svg(tab, metric="days", title="Où se blessent les joueurs NBA ?", subtitle=
         f'<text x="360" y="62" text-anchor="middle" font-size="34" font-weight="800" fill="#1b1b1a">{title}</text>'
         f'<text x="360" y="94" text-anchor="middle" font-size="17" font-weight="700" fill="#6b6b66" font-family="Helvetica, Arial, sans-serif">{subtitle}</text>'
         f'{"".join(figs)}{ramp}'
-        f'<text x="240" y="837" text-anchor="end" font-size="12" fill="#6b6b66" font-family="Helvetica, Arial, sans-serif">moins</text>'
-        f'<text x="480" y="837" font-size="12" fill="#6b6b66" font-family="Helvetica, Arial, sans-serif">plus de {unit}</text>'
+        f'<text x="240" y="837" text-anchor="end" font-size="12" fill="#6b6b66" font-family="Helvetica, Arial, sans-serif">less</text>'
+        f'<text x="480" y="837" font-size="12" fill="#6b6b66" font-family="Helvetica, Arial, sans-serif">more {unit}</text>'
         f'<text x="360" y="864" text-anchor="middle" font-size="13" font-weight="700" fill="#6b6b66" font-family="Helvetica, Arial, sans-serif">{footer}</text>'
-        f'<text x="360" y="884" text-anchor="middle" font-size="12" fill="#6b6b66" font-family="Helvetica, Arial, sans-serif">source : Pro Sports Transactions (via Kaggle) · gauche et droite regroupées</text>'
+        f'<text x="360" y="884" text-anchor="middle" font-size="12" fill="#6b6b66" font-family="Helvetica, Arial, sans-serif">source: Pro Sports Transactions (via Kaggle) · left and right pooled</text>'
         f'</svg>'
     )
 
@@ -200,8 +200,8 @@ def poster(inj, metric="days"):
     tab = by_region(inj)
     placed, located = len(inj), int(tab.injuries.sum())
     lo = f"{inj.season.min()}-{str(inj.season.min() + 1)[2:]}"
-    sub = f"{located:,} blessures depuis {lo} · couleur = {'jours d’absence cumulés' if metric == 'days' else 'nombre de blessures'}".replace(",", " ")
-    foot = f"{located:,} des {placed:,} mises sur la liste des blessés ont une partie du corps connue".replace(",", " ")
+    sub = f"{located:,} injuries since {lo} · color = {'cumulative days missed' if metric == 'days' else 'number of injuries'}"
+    foot = f"{located:,} of {placed:,} injured-list placements have a known body part"
     return svg(tab, metric, subtitle=sub, footer=foot)
 
 

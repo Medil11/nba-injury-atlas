@@ -39,19 +39,19 @@ def hex_rgb(h):
     return tuple(int(h[i:i + 2], 16) for i in (1, 3, 5))
 
 
-def fr(x):  # French number: 9,6
-    return f"{x:,.1f}".replace(",", " ").replace(".", ",")
+def f1(x):  # one decimal: 9.6
+    return f"{x:,.1f}"
 
 
 def fm(x):  # millions of dollars, no decimals: 753
-    return f"{round(x / 1e6):,}".replace(",", " ")
+    return f"{round(x / 1e6):,}"
 
 
-MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."]
+MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
 
 def fdate(t, day=True):
-    return f"{t.day} {MONTHS[t.month - 1]} {t.year}" if day else f"{MONTHS[t.month - 1]} {t.year}"
+    return f"{MONTHS[t.month - 1]} {t.day}, {t.year}" if day else f"{MONTHS[t.month - 1]} {t.year}"
 
 
 def new_page(title, sub):
@@ -168,27 +168,27 @@ def scene_body(inj, tab, g):
     count = dict(zip(tab.region, tab.injuries))
     vmax, costliest = max(vals.values()), max(vals, key=vals.get)
     located, placed = int(tab.injuries.sum()), len(inj)
-    sub = f"{located:,} blessures · {fdate(inj.placed.min(), False)} – {fdate(inj.placed.max(), False)} · couleur = jours d’absence cumulés".replace(",", " ")
-    img, d = new_page("Où se blessent les joueurs NBA ?", sub)
+    sub = f"{located:,} injuries · {fdate(inj.placed.min(), False)} – {fdate(inj.placed.max(), False)} · color = cumulative days missed"
+    img, d = new_page("Where do NBA players get hurt?", sub)
     for i in range(10):
         d.rectangle([(250 + i * 22) * S, 826 * S, (272 + i * 22) * S, 838 * S], fill=hex_rgb(bm._color(i, 9)))
-    d.text((240 * S, 837 * S), "moins", font=font(REG, 12), fill=GREY, anchor="rs")
-    d.text((480 * S, 837 * S), "plus de jours d'absence", font=font(REG, 12), fill=GREY, anchor="ls")
-    d.text((360 * S, 864 * S), f"{located:,} des {placed:,} mises sur la liste des blessés ont une partie du corps connue".replace(",", " "),
+    d.text((240 * S, 837 * S), "less", font=font(REG, 12), fill=GREY, anchor="rs")
+    d.text((480 * S, 837 * S), "more days missed", font=font(REG, 12), fill=GREY, anchor="ls")
+    d.text((360 * S, 864 * S), f"{located:,} of {placed:,} injured-list placements have a known body part",
            font=font(BOLD, 13), fill=GREY, anchor="ms")
-    d.text((360 * S, 884 * S), "nombre = blessures · exemple = absence la plus longue · photos : nba.com · source : Pro Sports Transactions (Kaggle)",
+    d.text((360 * S, 884 * S), "number = injuries · example = longest absence · photos: nba.com · source: Pro Sports Transactions (Kaggle)",
            font=font(REG, 12), fill=GREY, anchor="ms")
     sil, ring, lines, masks = body_masks()
     img.paste(CREAM, mask=sil)
 
-    ids = g.groupby("n").PLAYER_ID.first()
+    ids = g.groupby("n").PLAYER_ID.last()
     ex = inj[inj.region.isin(LEFT + RIGHT)].sort_values("days").groupby("region").tail(1).set_index("region")  # longest absence per zone
     cards = {}
     for left, regs in ((True, LEFT), (False, RIGHT)):
         for reg, y in zip(regs, spread([OY + SC * ANCHOR[r][1] for r in regs])):
             r = ex.loc[reg]
             cards[reg] = dict(left=left, y=y, n=int(count[reg]), label=bm.LABEL[reg], who=f"{short(r.player)}, {r.team}",
-                              photo=headshot(player_id(r.player, ids), 34))
+                              photo=headshot(player_id(r.player, ids), 44))
     f_num, f_lab, f_who = font(BOLD, 22), font(BOLD, 11), font(REG, 10)
 
     order = sorted(vals, key=vals.get)  # least injured first, the knee lands last
@@ -211,7 +211,7 @@ def scene_body(inj, tab, g):
                 continue
             al, left = round(255 * a), c["left"]
             col = (DARKRED if reg == costliest else INK) + (al,)
-            tx = 46 if left else 676
+            tx = 58 if left else 662
             anchor = "l" if left else "r"
             ld.text((tx * S, (c["y"] - 10) * S), str(c["n"]), font=f_num, fill=col, anchor=anchor + "m")
             ld.text((tx * S, (c["y"] + 7) * S), c["label"], font=f_lab, fill=col, anchor=anchor + "m")
@@ -219,7 +219,7 @@ def scene_body(inj, tab, g):
             width = max(ld.textlength(c["who"], font=f_who), ld.textlength(c["label"], font=f_lab)) / S
             t = c["photo"].copy()
             t.putalpha(t.getchannel("A").point(lambda v: round(v * a)))
-            layer.alpha_composite(t, (round((5 if left else 683) * S), round((c["y"] - 17) * S)))
+            layer.alpha_composite(t, (round((5 if left else 671) * S), round((c["y"] - 22) * S)))
             sx, sy = (tx + width + 6 if left else tx - width - 6) * S, c["y"] * S
             ex_, ey_ = px(FRONT_OX if left else BACK_OX, *ANCHOR[reg])
             ld.line([sx, sy, sx + (ex_ - sx) * p, sy + (ey_ - sy) * p], fill=(80, 80, 76, round(200 * a)), width=S)
@@ -250,9 +250,10 @@ def player_id(name, ids):
 
 def games():
     g = pd.concat(pd.read_csv(f, usecols=["PLAYER_ID", "PLAYER_NAME", "GAME_DATE"]) for f in glob.glob("data/player_games_*.csv"))
+    g = g.dropna(subset=["PLAYER_ID"]).astype({"PLAYER_ID": int})
     g["n"] = g.PLAYER_NAME.map(prep.norm)
     g["d"] = pd.to_datetime(g.GAME_DATE)
-    return g
+    return g.sort_values("d")  # sorted, so .last() gives a name's latest id (old logs carry a wrong id for some players, e.g. Rubio)
 
 
 def tears(inj, g):
@@ -260,7 +261,7 @@ def tears(inj, g):
 
     The dataset's 'activated' records are incomplete or wrong, so the return is the first game in the game logs."""
     dates = {n: x.d.sort_values().to_numpy() for n, x in g.groupby("n")}
-    ids = g.groupby("n").PLAYER_ID.first()
+    ids = g.groupby("n").PLAYER_ID.last()
     out = {}
     for r in inj[inj.note.str.contains(ACL)].sort_values("placed").itertuples():
         n = prep.norm(r.player)
@@ -287,19 +288,22 @@ def make_cost():
 
 def headshot(pid, d=28):
     """Round photo (nba.com headshot, cached in data/headshots/); grey disc if unavailable."""
-    D, path = d * S, Path(f"data/headshots/{pid}.png")
+    D, path = d * S, None
     tile = Image.new("RGBA", (D, D), (219, 214, 200, 255))
     try:
+        # ids can arrive as floats (1627749.0): the CDN then answers 200 with a generic grey silhouette
+        path = Path(f"data/headshots/{int(pid)}.png")
         if not path.exists():
-            r = requests.get(f"https://cdn.nba.com/headshots/nba/latest/260x190/{pid}.png", headers={"User-Agent": "Mozilla/5.0"}, timeout=20)
+            r = requests.get(f"https://cdn.nba.com/headshots/nba/latest/260x190/{path.stem}.png", headers={"User-Agent": "Mozilla/5.0"}, timeout=20)
             r.raise_for_status()
             path.parent.mkdir(exist_ok=True)
             path.write_bytes(r.content)
             Image.open(path).verify()
-        tile.alpha_composite(Image.open(path).convert("RGBA").crop((35, 0, 225, 190)).resize((D, D), Image.Resampling.LANCZOS))
+        tile.alpha_composite(Image.open(path).convert("RGBA").crop((62, 0, 197, 135)).resize((D, D), Image.Resampling.LANCZOS))  # tight on the face
     except Exception as e:  # noqa: BLE001
         print("no photo for", pid, "-", e)
-        path.unlink(missing_ok=True)
+        if path:
+            path.unlink(missing_ok=True)
     m = Image.new("L", (D * 4, D * 4), 0)
     ImageDraw.Draw(m).ellipse([0, 0, D * 4 - 1, D * 4 - 1], fill=255)
     tile.putalpha(m.resize((D, D), Image.Resampling.LANCZOS))
@@ -317,7 +321,7 @@ def scene_acl(inj, tab, g, stats):
     d0, d1 = pd.Timestamp("2018-10-01"), pd.Timestamp("2023-10-01")
     X0, X1 = 190, 690
     xs = lambda t: X0 + (X1 - X0) * (t - d0).days / (d1 - d0).days
-    img, d = new_page("Les ruptures des ligaments croisés", f"{len(ts)} ruptures · {stats['period']} · de l’arrêt au premier match joué")
+    img, d = new_page("Torn ACLs (knee ligament)", f"{len(ts)} tears · {stats['period']} · from injury to first game back")
     for y in range(2018, 2023):  # season columns
         x = xs(pd.Timestamp(f"{y}-10-01"))
         d.text(((x + xs(pd.Timestamp(f"{y + 1}-10-01"))) / 2 * S, 124 * S), f"{y}-{str(y + 1)[2:]}", font=font(BOLD, 12), fill=GREY, anchor="ms")
@@ -327,29 +331,29 @@ def scene_acl(inj, tab, g, stats):
     rows = []
     for i, (name, placed, back, pid) in enumerate(ts):
         y = ROW0 + i * STEP
-        d.text((138 * S, (y + BH / 2) * S), short(name), font=font(BOLD, 14), fill=RED if back is None else INK, anchor="rm")
-        tile = headshot(pid)
-        img.paste(tile, (round(148 * S), round((y + BH / 2 - 14) * S)), tile)
+        d.text((134 * S, (y + BH / 2) * S), short(name), font=font(BOLD, 14), fill=RED if back is None else INK, anchor="rm")
+        tile = headshot(pid, 34)
+        img.paste(tile, (round(144 * S), round((y + BH / 2 - 17) * S)), tile)
         rows.append((xs(placed), xs(back if back is not None else END), y, back is None))
     xe = xs(END)
     d.line([xe * S, 132 * S, xe * S, 700 * S], fill=INK, width=2 * S)
     d.rounded_rectangle([(xe - 60) * S, 702 * S, (xe + 60) * S, 726 * S], radius=5 * S, fill=INK)
-    d.text((xe * S, 714 * S), "fin des données", font=font(BOLD, 13), fill="white", anchor="mm")
-    d.text((60 * S, 790 * S), f"{med} jours", font=font(SLAB, 34), fill=BLUE, anchor="ls")
-    d.text((60 * S, 814 * S), f"d'absence médiane, ≈ {round(med / 30.4)} mois", font=font(BOLD, 14), fill=GREY, anchor="ls")
+    d.text((xe * S, 714 * S), "end of data", font=font(BOLD, 13), fill="white", anchor="mm")
+    d.text((60 * S, 790 * S), f"{med} days", font=font(SLAB, 34), fill=BLUE, anchor="ls")
+    d.text((60 * S, 814 * S), f"median absence, ≈ {round(med / 30.4)} months", font=font(BOLD, 14), fill=GREY, anchor="ls")
     if unknown:
-        d.text((690 * S, 790 * S), f"{len(unknown)} retours inconnus", font=font(SLAB, 34), fill=RED, anchor="rs")
-        d.text((690 * S, 814 * S), "aucun match joué après dans les données", font=font(BOLD, 14), fill=GREY, anchor="rs")
+        d.text((690 * S, 790 * S), f"{len(unknown)} unknown returns", font=font(SLAB, 34), fill=RED, anchor="rs")
+        d.text((690 * S, 814 * S), "no game played afterwards in the data", font=font(BOLD, 14), fill=GREY, anchor="rs")
     else:
-        d.text((690 * S, 790 * S), f"{longest} jours", font=font(SLAB, 34), fill=RED, anchor="rs")
-        d.text((690 * S, 814 * S), f"la plus longue : {longest_name}", font=font(BOLD, 14), fill=GREY, anchor="rs")
-    d.text((360 * S, 864 * S), "arrêt = mise sur la liste des blessés · retour = premier match joué", font=font(BOLD, 13), fill=GREY, anchor="ms")
-    d.text((360 * S, 884 * S), "photos : nba.com · source : Pro Sports Transactions (via Kaggle)" + (" · rouge : retour inconnu" if unknown else ""),
+        d.text((690 * S, 790 * S), f"{longest} days", font=font(SLAB, 34), fill=RED, anchor="rs")
+        d.text((690 * S, 814 * S), f"longest: {longest_name}", font=font(BOLD, 14), fill=GREY, anchor="rs")
+    d.text((360 * S, 864 * S), "injury = placed on the injured list · return = first game played", font=font(BOLD, 13), fill=GREY, anchor="ms")
+    d.text((360 * S, 884 * S), "photos: nba.com · source: Pro Sports Transactions (via Kaggle)" + (" · red: unknown return" if unknown else ""),
            font=font(REG, 12), fill=GREY, anchor="ms")
 
     STAG, DUR, HOLD = 3, 12, 60
     box_at = len(rows) * STAG + DUR
-    box = [f"≈ {fm(stats['acl_cost'])} M$", f"de salaires · {len(ts)} ruptures,", f"{fr(stats['share_inj'])} % des blessures,", f"{fr(stats['share_days'])} % des jours d'absence"]
+    box = [f"≈ ${fm(stats['acl_cost'])}M", f"in salaries · {len(ts)} tears,", f"{f1(stats['share_inj'])}% of injuries,", f"{f1(stats['share_days'])}% of days missed"]
     frames = []
     for f in range(box_at + 10 + HOLD):
         im = img.copy()
@@ -376,22 +380,22 @@ def scene_acl(inj, tab, g, stats):
 
 # ============================== scene 3: what the knee costs ==============================
 def scene_knee(stats):
-    img, _ = new_page("Le genou, la blessure la plus chère", f"du {stats['from']} au {stats['to']} · saisons 2018-19 à 2022-23")
+    img, _ = new_page("The knee, the costliest injury", f"{stats['from']} – {stats['to']} · seasons 2018-19 to 2022-23")
     lines = [  # (text, font, size, colour, y, appears at frame)
-        ("de salaires versés pendant", BOLD, 30, INK, 520, 34),
-        (f"{stats['knee_days']:,} jours d'absence au genou".replace(",", " "), BOLD, 30, INK, 566, 40),
-        (f"dont ≈ {fm(stats['acl_cost'])} M$ pour {stats['acl_n']} ruptures du croisé", BOLD, 25, DARKRED, 650, 48),
-        (f"seulement {fr(stats['share_inj'])} % des blessures, mais {fr(stats['share_days'])} % des jours d'absence", BOLD, 18, GREY, 692, 56),
+        ("in salaries paid during", BOLD, 30, INK, 520, 34),
+        (f"{stats['knee_days']:,} days missed with knee injuries", BOLD, 30, INK, 566, 40),
+        (f"of which ≈ ${fm(stats['acl_cost'])}M for {stats['acl_n']} torn ACLs", BOLD, 25, DARKRED, 650, 48),
+        (f"only {f1(stats['share_inj'])}% of injuries, but {f1(stats['share_days'])}% of days missed", BOLD, 18, GREY, 692, 56),
     ]
     d = ImageDraw.Draw(img)
-    d.text((360 * S, 864 * S), "salaire de la saison au prorata des jours sur la liste des blessés (saison régulière)", font=font(BOLD, 13), fill=GREY, anchor="ms")
-    d.text((360 * S, 884 * S), "estimation · salaires : HoopsHype · source : Pro Sports Transactions (via Kaggle)", font=font(REG, 12), fill=GREY, anchor="ms")
+    d.text((360 * S, 864 * S), "season salary pro-rated over days on the injured list (regular season)", font=font(BOLD, 13), fill=GREY, anchor="ms")
+    d.text((360 * S, 884 * S), "estimate · salaries: HoopsHype · source: Pro Sports Transactions (via Kaggle)", font=font(REG, 12), fill=GREY, anchor="ms")
     frames = []
     for f in range(56 + 8 + 65):
         im = img.copy()
         d = ImageDraw.Draw(im)
         if f >= 4:
-            d.text((360 * S, 350 * S), f"≈ {fm(stats['knee_cost'] * ease((f - 4) / 26))} M$", font=font(SLAB, 100), fill=DARKRED, anchor="mm")
+            d.text((360 * S, 350 * S), f"≈ ${fm(stats['knee_cost'] * ease((f - 4) / 26))}M", font=font(SLAB, 100), fill=DARKRED, anchor="mm")
         layer = Image.new("RGBA", im.size, (0, 0, 0, 0))
         ld = ImageDraw.Draw(layer)
         for text, fn, size, col, y, at in lines:
@@ -403,13 +407,39 @@ def scene_knee(stats):
 
 
 # ============================== scene 4: top 3 franchises ==============================
+LOGO = {  # franchise nickname -> ESPN team code (logo PNGs, cached in data/logos/)
+    "Hawks": "atl", "Celtics": "bos", "Nets": "bkn", "Hornets": "cha", "Bulls": "chi", "Cavaliers": "cle", "Mavericks": "dal", "Nuggets": "den",
+    "Pistons": "det", "Warriors": "gs", "Rockets": "hou", "Pacers": "ind", "Clippers": "lac", "Lakers": "lal", "Grizzlies": "mem", "Heat": "mia",
+    "Bucks": "mil", "Timberwolves": "min", "Pelicans": "no", "Knicks": "ny", "Thunder": "okc", "Magic": "orl", "76ers": "phi", "Suns": "phx",
+    "Blazers": "por", "Kings": "sac", "Spurs": "sa", "Raptors": "tor", "Jazz": "utah", "Wizards": "wsh",
+}
+
+
+def logo(nickname, size):
+    """Franchise logo (RGBA, `size` px at output scale), downloaded once from ESPN's CDN; None if unavailable."""
+    code = LOGO[nickname]
+    path = Path(f"data/logos/{code}.png")
+    try:
+        if not path.exists():
+            r = requests.get(f"https://a.espncdn.com/i/teamlogos/nba/500/{code}.png", headers={"User-Agent": "Mozilla/5.0"}, timeout=20)
+            r.raise_for_status()
+            path.parent.mkdir(exist_ok=True)
+            path.write_bytes(r.content)
+            Image.open(path).verify()
+        return Image.open(path).convert("RGBA").resize((size * S, size * S), Image.Resampling.LANCZOS)
+    except Exception as e:  # noqa: BLE001
+        print("no logo for", nickname, "-", e)
+        path.unlink(missing_ok=True)
+
+
 def scene_franchises(rank, period):
     top = rank.head(3)
     gap = 100 * (1 - rank.days.iloc[4] / rank.days.iloc[0])  # how close the 5th is to the 1st
-    img, d = new_page("Les 3 franchises les plus touchées", f"jours d’absence cumulés · {period}")
-    d.text((360 * S, 864 * S), "arrêt = mise sur la liste des blessés · blessures dont la zone du corps est connue", font=font(BOLD, 13), fill=GREY, anchor="ms")
-    d.text((360 * S, 884 * S), "source : Pro Sports Transactions (via Kaggle) · franchises regroupées sous leur nom actuel", font=font(REG, 12), fill=GREY, anchor="ms")
-    BARW, X, STAG, DUR, HOLD = 410, 150, 10, 16, 60
+    img, d = new_page("The 3 most injured franchises", f"cumulative days missed · {period}")
+    d.text((360 * S, 864 * S), "injury = placed on the injured list · only injuries with a known body part", font=font(BOLD, 13), fill=GREY, anchor="ms")
+    d.text((360 * S, 884 * S), "source: Pro Sports Transactions (via Kaggle) · franchises grouped under their current name", font=font(REG, 12), fill=GREY, anchor="ms")
+    BARW, X, STAG, DUR, HOLD = 340, 204, 10, 16, 60
+    logos = [logo(r.franchise, 76) for r in top.itertuples()]
     note_at = 4 + 3 * STAG + DUR
     frames = []
     for f in range(note_at + 8 + HOLD):
@@ -420,17 +450,21 @@ def scene_franchises(rank, period):
             if p <= 0:
                 continue
             al, col = round(255 * p), (DARKRED if i == 0 else RED)
-            ld.text((48 * S, (y + 22) * S), str(i + 1), font=font(SLAB, 96), fill=(DARKRED if i == 0 else INK) + (al,), anchor="lm")
+            ld.text((30 * S, (y + 22) * S), str(i + 1), font=font(SLAB, 96), fill=(DARKRED if i == 0 else INK) + (al,), anchor="lm")
+            if logos[i] is not None:
+                t = logos[i].copy()
+                t.putalpha(t.getchannel("A").point(lambda v: round(v * p)))
+                layer.alpha_composite(t, (round(106 * S), round((y - 14) * S)))
             ld.text((X * S, y * S), r.name, font=font(BOLD, 28), fill=INK + (al,), anchor="ls")
             w = BARW * r.days / top.days.iloc[0] * p
             ld.rounded_rectangle([X * S, (y + 14) * S, (X + w) * S, (y + 46) * S], radius=4 * S, fill=col + (255,))
-            ld.text(((X + BARW + 14) * S, (y + 32) * S), f"{round(r.days * p):,}".replace(",", " "), font=font(SLAB, 34), fill=col + (al,), anchor="lm")
-            ld.text((X * S, (y + 70) * S), f"{r.injuries} blessures · {r.days / r.injuries:.0f} jours en moyenne", font=font(BOLD, 15), fill=GREY + (al,), anchor="ls")
+            ld.text(((X + BARW + 14) * S, (y + 32) * S), f"{round(r.days * p):,}", font=font(SLAB, 34), fill=col + (al,), anchor="lm")
+            ld.text((X * S, (y + 70) * S), f"{r.injuries} injuries · {r.days / r.injuries:.0f} days on average", font=font(BOLD, 15), fill=GREY + (al,), anchor="ls")
         a = ease((f - note_at) / 8)
         if a > 0:
             al = round(255 * a)
-            ld.text((360 * S, 770 * S), f"Podium très serré : le 5e est à {gap:.0f} % du 1er", font=font(BOLD, 22), fill=DARKRED + (al,), anchor="mm")
-            ld.text((360 * S, 802 * S), "le classement change selon la période ou le périmètre choisi", font=font(BOLD, 15), fill=GREY + (al,), anchor="mm")
+            ld.text((360 * S, 770 * S), f"Very tight podium: #5 is within {gap:.0f}% of #1", font=font(BOLD, 22), fill=DARKRED + (al,), anchor="mm")
+            ld.text((360 * S, 802 * S), "the ranking changes with the period or scope chosen", font=font(BOLD, 15), fill=GREY + (al,), anchor="mm")
         frames.append(final(Image.alpha_composite(img.convert("RGBA"), layer).convert("RGB")))
     return frames
 
@@ -454,7 +488,7 @@ def main(out="body_map.gif"):
     inj_all = bm.injuries(range(2010, 2023))  # franchise ranking: since 2010-11
     rank = bm.by_franchise(inj_all)
     print(rank.head(6)[["franchise", "days", "injuries"]].to_string())
-    period_all = f"du {fdate(inj_all.placed.min())} au {fdate(inj_all.placed.max())}"
+    period_all = f"{fdate(inj_all.placed.min())} – {fdate(inj_all.placed.max())}"
     a, b, c, e = scene_body(inj, tab, g), scene_acl(inj, tab, g, stats), scene_knee(stats), scene_franchises(rank, period_all)
     fade = lambda x, y, n: [Image.blend(x, y, (i + 1) / (n + 1)) for i in range(n)]
     frames = a + fade(a[-1], b[0], 8) + b + fade(b[-1], c[0], 8) + c + fade(c[-1], e[0], 8) + e + fade(e[-1], a[0], 8)  # loops back to the empty body

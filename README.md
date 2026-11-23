@@ -1,69 +1,69 @@
 # nba-injury-atlas
 
-**Où se blessent les joueurs NBA, et combien ça coûte ?** Un GIF animé et deux dashboards [marimo](https://marimo.io) construits à partir des mises sur la liste des blessés (saisons 2018-19 à 2022-23), des logs de matchs et des salaires.
+**Where do NBA players get hurt, and what does it cost?** An animated GIF and two [marimo](https://marimo.io) dashboards built from injured-list placements (seasons 2018-19 to 2022-23), game logs and salaries.
 
 ![GIF](body_map.gif)
 
-Le GIF (720 × 900, ~26 s, ~10 Mo) enchaîne quatre scènes :
+The GIF (720 × 900, ~26 s, ~10 MB) chains four scenes:
 
-1. **Où se blessent les joueurs** : silhouette de face et de dos, zones colorées par jours d'absence cumulés, avec pour chaque zone le nombre de blessures et un joueur exemple (absence la plus longue).
-2. **Les ruptures des ligaments croisés** : une barre par rupture, de la mise sur la liste des blessés au premier match joué.
-3. **Le genou, la blessure la plus chère** : salaires versés pendant les absences au genou.
-4. **Les 3 franchises les plus touchées** depuis 2010-11 (jours d'absence cumulés).
+1. **Where do NBA players get hurt?** Front and back silhouettes, body zones coloured by cumulative days missed, with the number of injuries and an example player (longest absence) for each zone.
+2. **Torn ACLs.** One bar per tear, from the placement on the injured list to the first game played.
+3. **The knee, the costliest injury.** Salaries paid during knee-injury absences.
+4. **The 3 most injured franchises** since 2010-11 (cumulative days missed), with team logos.
 
-## Résultats (à la date de génération)
+## Results (at generation time)
 
 | | |
 |---|---|
-| Blessures localisées (zone du corps connue) | 3 480 sur 5 072 mises sur la liste, sept. 2018 – avr. 2023 |
-| Genou | ≈ 753 M$ de salaires, 13 835 jours d'absence (zone la plus chère) |
-| Ruptures du croisé | 13 ruptures, ≈ 128 M$, 0,5 % des blessures mais 4,3 % des jours d'absence |
-| Franchises (2010-11 → 2022-23) | Warriors 4 156 j, Bucks 4 047 j, Nets 4 029 j : **podium très serré** |
+| Injuries with a known body part | 3,480 of 5,072 injured-list placements, Sep 2018 – Apr 2023 |
+| Knee | ≈ $753M in salaries, 13,835 days missed (costliest body part) |
+| Torn ACLs | 13 tears, ≈ $128M, 0.5% of injuries but 4.3% of days missed |
+| Franchises (2010-11 → 2022-23) | Warriors 4,156 days, Bucks 4,047, Nets 4,029: **a very tight podium** |
 
-## Fichiers
+## Files
 
-| Fichier | Rôle |
+| File | Role |
 |---|---|
-| `make_gif.py` | Génère `body_map.gif` (Pillow + [slack-gif-creator](https://skills.sh/anthropics/skills/slack-gif-creator) pour l'assemblage) |
-| `bodymap.py` | Nettoyage des notes de blessure, zone du corps, durée d'absence, classement des franchises, formes du corps |
-| `prep.py` | Table joueur-saison : salaire, matchs manqués, coût (dashboard) |
-| `nba_injuries.py` | Dashboard marimo : coût des absences par franchise, saison, joueur |
-| `nba_body_map.py` | Dashboard marimo : carte du corps interactive |
-| `fetch_games.py` | Télécharge les logs de matchs (`nba_api`) |
+| `make_gif.py` | Builds `body_map.gif` (Pillow, assembled with the [slack-gif-creator](https://skills.sh/anthropics/skills/slack-gif-creator) toolkit) |
+| `bodymap.py` | Cleans injury notes, maps them to body parts, computes absence days, franchise ranking, body shapes |
+| `prep.py` | Player-season table: salary, games missed, cost (used by the dashboard) |
+| `nba_injuries.py` | marimo dashboard: cost of absences by franchise, season, player |
+| `nba_body_map.py` | marimo dashboard: interactive body map |
+| `fetch_games.py` | Downloads game logs (`nba_api`) |
 
-## Installation
+## Setup
 
 ```bash
 pip install -r requirements.txt
-npx skills add anthropics/skills@slack-gif-creator -g -y   # utilitaires GIF (GIFBuilder, easing) utilisés par make_gif.py
+npx skills add anthropics/skills@slack-gif-creator -g -y   # GIF utilities (GIFBuilder, easing) used by make_gif.py
 ```
 
-`make_gif.py` utilise les polices Windows (`C:/Windows/Fonts` : Rockwell Extra Bold, Arial). Sur un autre système, adapter `FONTS`, `SLAB`, `BOLD`, `REG`.
+`make_gif.py` uses Windows fonts (`C:/Windows/Fonts`: Rockwell Extra Bold, Arial). On another system, adapt `FONTS`, `SLAB`, `BOLD`, `REG`.
 
-## Données (non incluses dans le dépôt, dossier `data/` ignoré)
+## Data (not in the repo: the `data/` folder is git-ignored)
 
-- **Blessures** : dataset Kaggle [`loganlauton/nba-injury-stats-1951-2023`](https://www.kaggle.com/datasets/loganlauton/nba-injury-stats-1951-2023) (issu de Pro Sports Transactions), jusqu'en avril 2023. À enregistrer sous `data/injuries_kaggle.csv`. Vérifier la licence.
+- **Injuries:** Kaggle dataset [`loganlauton/nba-injury-stats-1951-2023`](https://www.kaggle.com/datasets/loganlauton/nba-injury-stats-1951-2023) (from Pro Sports Transactions), up to April 2023. Save it as `data/injuries_kaggle.csv`. Check its license.
   ```python
   import kagglehub; print(kagglehub.dataset_download("loganlauton/nba-injury-stats-1951-2023"))
   ```
-- **Logs de matchs** : `python fetch_games.py` crée `data/player_games_*.csv` et `data/team_games_*.csv` (2010-11 à 2022-23).
-- **Salaires** : un fichier par saison `data/salaries_<année de début>.csv` (2018 à 2022 pour le GIF), colonnes `team` (ex. `boston-celtics`), `season`, `player_id`, `player`, `salary`, `cap_hit`, `two_way`, `terminated`. Ils ont été relevés sur les pages équipe de HoopsHype ; ils ne sont pas redistribués ici. Vérifier les conditions du site avant de réutiliser ces données.
-- **Photos** : téléchargées automatiquement depuis nba.com au premier lancement de `make_gif.py` (cache `data/headshots/`). Ces images sont protégées : ne pas republier le GIF sans vérifier les droits.
+- **Game logs:** `python fetch_games.py` creates `data/player_games_*.csv` and `data/team_games_*.csv` (2010-11 to 2022-23).
+- **Salaries:** one file per season, `data/salaries_<start year>.csv` (2018 to 2022 for the GIF), with columns `team` (e.g. `boston-celtics`), `season`, `player_id`, `player`, `salary`, `cap_hit`, `two_way`, `terminated`. They were collected from HoopsHype team pages and are not redistributed here. Check the site's terms before reusing that data.
+- **Photos and logos:** downloaded automatically the first time `make_gif.py` runs: player headshots from nba.com (cached in `data/headshots/`), team logos from ESPN's CDN (cached in `data/logos/`). These images are copyrighted and trademarked: do not republish the GIF without checking the rights.
 
-## Utilisation
+## Usage
 
 ```bash
-python fetch_games.py                       # une fois
+python fetch_games.py                       # once
 python make_gif.py                          # -> body_map.gif (~2 min)
-python -m marimo run nba_injuries.py        # dashboard coût des absences
-python -m marimo run nba_body_map.py        # carte du corps interactive
+python -m marimo run nba_injuries.py        # cost-of-absences dashboard
+python -m marimo run nba_body_map.py        # interactive body map
 ```
 
-## Méthode et limites
+## Method and limits
 
-- **Absence** : jours entre la mise sur la liste des blessés et la première des deux dates suivantes : la transaction suivante du joueur, ou son premier match joué (le dataset oublie certains retours ; sans le plafonnement par le premier match, le coût du genou était surestimé d'environ 7 %). Sinon, mi-avril.
-- **Coût** : salaire de la saison au prorata des jours passés sur la liste des blessés pendant la saison régulière (20 oct. – 12 avr.). C'est une **estimation**, plutôt un minimum : les absences jamais déclarées sur la liste ne sont pas comptées.
-- **Zone du corps** : repérage par mots-clés dans les notes (« sprained left ankle »). Gauche et droite sont regroupées. 1 592 mises sur la liste n'ont aucun détail ou sont des maladies / protocoles COVID : elles ne sont pas localisées.
-- **Ruptures du croisé** : seulement 13 ruptures distinctes dans les données (beaucoup d'absences ne passent jamais par la liste). Le retour est le premier match joué, car les dates « activated from IL » du dataset sont parfois fausses ou absentes.
-- **Classement des franchises** : fragile. Les 5 premières sont à moins de 4 % d'écart, et le top 3 change selon la période ou le périmètre (toutes les blessures : Nets, Warriors, 76ers). Il mesure les arrêts déclarés, pas toutes les absences. Bobcats = Hornets ; « Hornets » avant juillet 2013 = Pelicans.
-- **Silhouette** : contour humain dessiné à la main (courbes), pas une illustration anatomique.
+- **Absence:** days between the placement on the injured list and the earlier of the player's next transaction or his first game played afterwards (the dataset misses some returns; without capping at the first game played, the knee cost was overestimated by about 7%). Mid-April if neither exists.
+- **Cost:** season salary pro-rated over the days spent on the injured list during the regular season (Oct 20 – Apr 12). This is an **estimate**, more likely a floor: absences never declared on the list are not counted.
+- **Body part:** keyword matching on the notes ("sprained left ankle"). Left and right are pooled. 1,592 placements have no detail or are illnesses / COVID protocols, so they are not located.
+- **Torn ACLs:** only 13 distinct tears in the data (many absences never go through the injured list). The return is the first game played, because the dataset's "activated from IL" dates are sometimes wrong or missing.
+- **Franchise ranking:** fragile. The top 5 are within 4% of each other, and the top 3 changes with the period or scope (all injuries: Nets, Warriors, 76ers). It measures declared injured-list stints, not every absence. Bobcats = Hornets; "Hornets" before July 2013 = Pelicans.
+- **Silhouette:** a hand-drawn human outline (curves), not an anatomical illustration.
